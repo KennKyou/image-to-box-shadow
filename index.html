@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Image to Box-Shadow</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: #f8fafc;
+      min-height: 100vh;
+      padding: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px;
+      background: white;
+      border-radius: 1rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      padding: 2rem;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1f2937;
+      margin-bottom: 0.5rem;
+    }
+
+    .header p {
+      color: #6b7280;
+      font-size: 0.875rem;
+    }
+
+    .upload-section {
+      margin-bottom: 1.5rem;
+    }
+
+    .upload-area {
+      border: 2px dashed #d1d5db;
+      border-radius: 0.75rem;
+      padding: 2rem 1rem;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      background: #f9fafb;
+      text-align: center;
+    }
+
+    .upload-area:hover {
+      border-color: #6366f1;
+      background: #f3f4f6;
+    }
+
+    .upload-area.dragover {
+      border-color: #6366f1;
+      background: #eef2ff;
+    }
+
+    .upload-icon {
+      font-size: 2rem;
+      color: #9ca3af;
+      margin-bottom: 1rem;
+    }
+
+    .upload-area h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 0.5rem;
+    }
+
+    .upload-area p {
+      font-size: 0.875rem;
+      color: #6b7280;
+      margin-bottom: 1rem;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .upload-btn {
+      background: #6366f1;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .upload-btn:hover {
+      background: #5855eb;
+    }
+
+
+    .preview-section {
+      display: none;
+      margin-bottom: 1.5rem;
+    }
+
+    .preview-group h3 {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #374151;
+      text-align: center;
+      margin-bottom: 0.75rem;
+    }
+
+    .preview-container {
+      background: #f9fafb;
+      border-radius: 0.5rem;
+      padding: 1rem;
+      min-height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #e5e7eb;
+    }
+
+    .original-preview {
+      max-width: 100%;
+      max-height: 120px;
+      border-radius: 0.375rem;
+    }
+
+    #originalPlaceholder {
+      color: #9ca3af;
+      font-size: 0.875rem;
+    }
+
+
+    .actions {
+      display: none;
+      gap: 0.75rem;
+    }
+
+    .action-btn {
+      flex: 1;
+      background: #10b981;
+      color: white;
+      border: none;
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .action-btn:hover:not(:disabled) {
+      background: #059669;
+    }
+
+    .action-btn:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+
+    .action-btn:first-child {
+      background: #6366f1;
+    }
+
+    .action-btn:first-child:hover:not(:disabled) {
+      background: #5855eb;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 4px;
+      background: #e5e7eb;
+      border-radius: 2px;
+      overflow: hidden;
+      margin: 1rem 0;
+      display: none;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: #6366f1;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    .status {
+      text-align: center;
+      margin: 1rem 0;
+      padding: 0.75rem;
+      border-radius: 0.5rem;
+      display: none;
+      font-size: 0.875rem;
+    }
+
+    .status.success {
+      background: #f0fdf4;
+      color: #166534;
+      border: 1px solid #22c55e;
+    }
+
+    .status.error {
+      background: #fef2f2;
+      color: #dc2626;
+      border: 1px solid #ef4444;
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 0.75rem;
+      }
+      
+      .container {
+        padding: 1.5rem;
+      }
+      
+      .header h1 {
+        font-size: 1.25rem;
+      }
+      
+      .upload-area {
+        padding: 1.5rem 0.75rem;
+      }
+      
+      .upload-icon {
+        font-size: 1.5rem;
+      }
+      
+      .actions {
+        flex-direction: column;
+      }
+      
+      .action-btn {
+        width: 100%;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .container {
+        padding: 1rem;
+      }
+      
+      .upload-area {
+        padding: 1rem 0.5rem;
+      }
+      
+      .preview-container {
+        min-height: 100px;
+      }
+      
+      .original-preview {
+        max-height: 100px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🎨 Image to Box-Shadow</h1>
+      <p>將圖片轉換為純 CSS Box-Shadow 像素藝術</p>
+    </div>
+
+    <div class="main-content">
+      <div class="upload-section">
+        <div class="upload-area" id="uploadArea">
+          <div class="upload-icon">📸</div>
+          <h3>選擇或拖拽圖片</h3>
+          <p>支援 JPG, PNG, GIF</p>
+          <button class="upload-btn" onclick="handleUploadClick()">
+            選擇圖片
+          </button>
+          <input type="file" id="fileInput" class="file-input" accept="image/*">
+        </div>
+      </div>
+
+
+      <div class="progress-bar" id="progressBar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+
+      <div class="status" id="status"></div>
+
+      <div class="preview-section" id="previewSection">
+        <div class="preview-group">
+          <h3>圖片預覽</h3>
+          <div class="preview-container">
+            <img id="originalPreview" class="original-preview" style="display: none;">
+            <div id="originalPlaceholder">圖片預覽</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions" id="actions">
+        <button class="action-btn" id="processBtn" onclick="processImage()">
+          開始轉換
+        </button>
+        <button class="action-btn" id="downloadBtn" onclick="downloadHTML()" disabled>
+          下載 HTML
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <canvas id="hiddenCanvas" style="display: none;"></canvas>
+
+  <script>
+    let currentImageData = null;
+    let generatedCSS = '';
+
+    // 文件上傳處理
+    const fileInput = document.getElementById('fileInput');
+    const uploadArea = document.getElementById('uploadArea');
+
+    fileInput.addEventListener('change', handleFileSelect);
+    uploadArea.addEventListener('dragover', handleDragOver);
+    uploadArea.addEventListener('dragleave', handleDragLeave);
+    uploadArea.addEventListener('drop', handleDrop);
+
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (file && file.type.startsWith('image/')) {
+        loadImage(file);
+      }
+    }
+
+    function handleDragOver(event) {
+      event.preventDefault();
+      uploadArea.classList.add('dragover');
+    }
+
+    function handleDragLeave(event) {
+      event.preventDefault();
+      uploadArea.classList.remove('dragover');
+    }
+
+    function handleDrop(event) {
+      event.preventDefault();
+      uploadArea.classList.remove('dragover');
+      const file = event.dataTransfer.files[0];
+      if (file && file.type.startsWith('image/')) {
+        loadImage(file);
+      }
+    }
+
+    function handleUploadClick() {
+      fileInput.click();
+    }
+
+    function loadImage(file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          currentImageData = {
+            src: e.target.result,
+            width: img.width,
+            height: img.height
+          };
+          
+          showImagePreview(e.target.result);
+          showControls();
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function showImagePreview(src) {
+      const preview = document.getElementById('originalPreview');
+      const placeholder = document.getElementById('originalPlaceholder');
+      
+      preview.src = src;
+      preview.style.display = 'block';
+      placeholder.style.display = 'none';
+      
+      document.getElementById('previewSection').style.display = 'grid';
+    }
+
+    function showControls() {
+      document.getElementById('actions').style.display = 'flex';
+    }
+
+    function showStatus(message, type) {
+      const status = document.getElementById('status');
+      status.textContent = message;
+      status.className = `status ${type}`;
+      status.style.display = 'block';
+      
+      if (type === 'success') {
+        setTimeout(() => {
+          status.style.display = 'none';
+        }, 3000);
+      }
+    }
+
+    function updateProgress(percent) {
+      const progressBar = document.getElementById('progressBar');
+      const progressFill = document.getElementById('progressFill');
+      
+      if (percent === 0) {
+        progressBar.style.display = 'none';
+      } else {
+        progressBar.style.display = 'block';
+        progressFill.style.width = percent + '%';
+        
+        if (percent === 100) {
+          setTimeout(() => {
+            progressBar.style.display = 'none';
+          }, 1000);
+        }
+      }
+    }
+
+    async function processImage() {
+      if (!currentImageData) {
+        showStatus('請先選擇圖片', 'error');
+        return;
+      }
+
+      const processBtn = document.getElementById('processBtn');
+      const downloadBtn = document.getElementById('downloadBtn');
+      
+      processBtn.disabled = true;
+      processBtn.textContent = '🔄 處理中...';
+      downloadBtn.disabled = true;
+      
+      updateProgress(10);
+
+      try {
+        updateProgress(30);
+        
+        const result = await imageToBoxShadow(currentImageData.src);
+        
+        updateProgress(80);
+        
+        generatedCSS = result.html;
+        
+        updateProgress(100);
+        
+        downloadBtn.disabled = false;
+        showStatus('轉換完成！', 'success');
+        
+      } catch (error) {
+        console.error('處理圖片時發生錯誤:', error);
+        showStatus('處理圖片時發生錯誤，請重試', 'error');
+      } finally {
+        processBtn.disabled = false;
+        processBtn.textContent = '🔄 開始轉換';
+      }
+    }
+
+    async function imageToBoxShadow(imageSrc) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = function() {
+          try {
+            const canvas = document.getElementById('hiddenCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            const width = img.width;
+            const height = img.height;
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            ctx.drawImage(img, 0, 0, width, height);
+            const imageData = ctx.getImageData(0, 0, width, height);
+            console.log(imageData);
+            const pixels = imageData.data;
+            
+            let boxShadows = [];
+            
+            for (let y = 0; y < height; y++) {
+              for (let x = 0; x < width; x++) {
+                const index = (y * width + x) * 4;
+                const r = pixels[index];
+                const g = pixels[index + 1];
+                const b = pixels[index + 2];
+                const a = pixels[index + 3] / 255;
+                
+                if (a > 0.1) {
+                  boxShadows.push(`${x}px ${y}px 0 rgba(${r},${g},${b},${a})`);
+                }
+              }
+            }
+            
+            const css = boxShadows.join(',\n    ');
+            const html = generateHTML(css, width, height);
+            
+            resolve({
+              css,
+              html,
+              width,
+              height
+            });
+            
+          } catch (error) {
+            reject(error);
+          }
+        };
+        img.onerror = reject;
+        img.src = imageSrc;
+      });
+    }
+
+    function generateHTML(css, width, height) {
+      return `<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Box-Shadow Pixel Art</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            width: ${width}px;
+            height: ${height}px;
+            background: white;
+            overflow: hidden;
+            position: relative;
+        }
+        .pixel-art {
+            width: 1px;
+            height: 1px;
+            background: transparent;
+            box-shadow: ${css};
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="pixel-art"></div>
+    </div>
+</body>
+</html>`;
+    }
+
+
+    function downloadHTML() {
+      if (!generatedCSS) {
+        showStatus('請先轉換圖片', 'error');
+        return;
+      }
+      
+      const blob = new Blob([generatedCSS], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'boxshadow-pixel-art.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      showStatus('HTML 文件已下載！', 'success');
+    }
+  </script>
+</body>
+</html>
