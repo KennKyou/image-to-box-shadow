@@ -148,6 +148,55 @@
       font-size: 0.875rem;
     }
 
+    .filter-controls {
+      display: none;
+      margin-top: 1rem;
+      padding: 1rem;
+      background: #f9fafb;
+      border-radius: 0.5rem;
+      border: 1px solid #e5e7eb;
+    }
+
+    .filter-controls h4 {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 0.75rem;
+    }
+
+    .filter-buttons {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 0.5rem 0.75rem;
+      background: #f3f4f6;
+      border: 1px solid #d1d5db;
+      border-radius: 0.375rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #374151;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .filter-btn:hover {
+      background: #e5e7eb;
+    }
+
+    .filter-btn.active {
+      background: #6366f1;
+      color: white;
+      border-color: #6366f1;
+    }
+
+    .filter-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
 
     .actions {
       display: none;
@@ -268,6 +317,15 @@
       .original-preview {
         max-height: 100px;
       }
+      
+      .filter-buttons {
+        justify-content: center;
+      }
+      
+      .filter-btn {
+        flex: 1;
+        min-width: 60px;
+      }
     }
   </style>
 </head>
@@ -305,6 +363,18 @@
             <img id="originalPreview" class="original-preview" style="display: none;">
             <div id="originalPlaceholder">圖片預覽</div>
           </div>
+          
+          <div class="filter-controls" id="filterControls">
+            <h4>濾鏡效果</h4>
+            <div class="filter-buttons">
+              <button class="filter-btn active" data-filter="none">原圖</button>
+              <button class="filter-btn" data-filter="negative">負片</button>
+              <button class="filter-btn" data-filter="grayscale">灰階</button>
+              <button class="filter-btn" data-filter="sepia">懷舊</button>
+              <button class="filter-btn" data-filter="bright">增亮</button>
+              <button class="filter-btn" data-filter="dark">變暗</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -324,6 +394,7 @@
   <script>
     let currentImageData = null;
     let generatedCSS = '';
+    let selectedFilter = 'none';
 
     // 文件上傳處理
     const fileInput = document.getElementById('fileInput');
@@ -396,6 +467,30 @@
 
     function showControls() {
       document.getElementById('actions').style.display = 'flex';
+      document.getElementById('filterControls').style.display = 'block';
+      
+      // 初始化濾鏡按鈕事件
+      initFilterButtons();
+    }
+    
+    function initFilterButtons() {
+      const filterButtons = document.querySelectorAll('.filter-btn');
+      
+      filterButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+          // 移除所有按鈕的 active 狀態
+          filterButtons.forEach(b => b.classList.remove('active'));
+          
+          // 添加當前按鈕的 active 狀態
+          this.classList.add('active');
+          
+          // 更新選中的濾鏡
+          selectedFilter = this.dataset.filter;
+          
+          // 更新預覽圖片
+          updatePreviewWithFilter();
+        });
+      });
     }
 
     function showStatus(message, type) {
@@ -467,6 +562,85 @@
       }
     }
 
+    function applyFilter(imageData, filter) {
+      const pixels = imageData.data;
+      
+      for (let i = 0; i < pixels.length; i += 4) {
+        const r = pixels[i];
+        const g = pixels[i + 1];
+        const b = pixels[i + 2];
+        
+        let newR = r, newG = g, newB = b;
+        
+        switch (filter) {
+          case 'negative':
+            newR = 255 - r;
+            newG = 255 - g;
+            newB = 255 - b;
+            break;
+            
+          case 'grayscale':
+            const gray = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+            newR = newG = newB = gray;
+            break;
+            
+          case 'sepia':
+            newR = Math.min(255, Math.round(0.393 * r + 0.769 * g + 0.189 * b));
+            newG = Math.min(255, Math.round(0.349 * r + 0.686 * g + 0.168 * b));
+            newB = Math.min(255, Math.round(0.272 * r + 0.534 * g + 0.131 * b));
+            break;
+            
+          case 'bright':
+            newR = Math.min(255, r + 50);
+            newG = Math.min(255, g + 50);
+            newB = Math.min(255, b + 50);
+            break;
+            
+          case 'dark':
+            newR = Math.max(0, r - 50);
+            newG = Math.max(0, g - 50);
+            newB = Math.max(0, b - 50);
+            break;
+            
+          default: // 'none'
+            break;
+        }
+        
+        pixels[i] = newR;
+        pixels[i + 1] = newG;
+        pixels[i + 2] = newB;
+      }
+      
+      return imageData;
+    }
+    
+    function updatePreviewWithFilter() {
+      if (!currentImageData) return;
+      
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      img.onload = function() {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        
+        ctx.drawImage(img, 0, 0);
+        
+        if (selectedFilter !== 'none') {
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          applyFilter(imageData, selectedFilter);
+          ctx.putImageData(imageData, 0, 0);
+        }
+        
+        // 更新預覽圖片
+        const preview = document.getElementById('originalPreview');
+        preview.src = canvas.toDataURL();
+      };
+      
+      img.src = currentImageData.src;
+    }
+
     async function imageToBoxShadow(imageSrc) {
       return new Promise((resolve, reject) => {
         const img = new Image();
@@ -482,8 +656,13 @@
             canvas.height = height;
             
             ctx.drawImage(img, 0, 0, width, height);
-            const imageData = ctx.getImageData(0, 0, width, height);
-            console.log(imageData);
+            let imageData = ctx.getImageData(0, 0, width, height);
+            
+            // 應用濾鏡效果
+            if (selectedFilter !== 'none') {
+              imageData = applyFilter(imageData, selectedFilter);
+            }
+            
             const pixels = imageData.data;
             
             let boxShadows = [];
